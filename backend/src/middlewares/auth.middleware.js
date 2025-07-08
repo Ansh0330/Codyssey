@@ -39,7 +39,35 @@ export const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.log("Error in middleware",error);
+    console.log("Error in middleware", error);
+    res.status(500).json({
+      success: false,
+      message: "Error authenticating the user by jwt token",
+      error: error.message,
+    });
+  }
+};
+
+export const isAdmin = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const user = await db.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        role: true,
+      },
+    });
+    if (!user && user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized , User is not an admin",
+      });
+    }
+    next();
+  } catch (error) {
+    console.log("Error in is Admin middleware", error);
     res.status(500).json({
       success: false,
       message: "Error authenticating the user by jwt token",
