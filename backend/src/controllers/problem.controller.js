@@ -96,6 +96,44 @@ export const createProblem = async (req, res) => {
     });
   }
 };
+
+export const updateProblem = async (req, res) => {};
+export const deleteProblem = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const problem = await db.problem.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: "Problem not found",
+      });
+    }
+
+    await db.problem.delete({
+      where: {
+        id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Problem deleted successfully",
+    });
+  } catch (error) {
+    console.log("Error in deleteProblem", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting the problem",
+      error: error.message,
+    });
+  }
+};
+
 export const getAllProblems = async (req, res) => {
   try {
     const problems = await db.problem.findMany();
@@ -151,42 +189,34 @@ export const getProblemById = async (req, res) => {
     });
   }
 };
-export const getAllProblemsSolvedByUser = async (req, res) => {};
-
-
-
-export const updateProblem = async (req, res) => {};
-export const deleteProblem = async (req, res) => {
-  const { id } = req.params;
+export const getAllProblemsSolvedByUser = async (req, res) => {
   try {
-    const problem = await db.problem.findUnique({
+    const problems = await db.problem.findMany({
       where: {
-        id,
+        solvedBy: {
+          some: {
+            userId: req.user.id,
+          },
+        },
+      },
+      include: {
+        solvedBy: {
+          where: {
+            userId: req.user.id,
+          },
+        },
       },
     });
-
-    if (!problem) {
-      return res.status(404).json({
-        success: false,
-        message: "Problem not found",
-      });
-    }
-
-    await db.problem.delete({
-      where: {
-        id,
-      },
-    });
-
     res.status(200).json({
       success: true,
-      message: "Problem deleted successfully",
+      message: "Solved Problems fetched successfully",
+      problems,
     });
   } catch (error) {
-    console.log("Error in deleteProblem", error);
+    console.log("Error in getAllProblemsSolvedByUser", error);
     res.status(500).json({
       success: false,
-      message: "Error deleting the problem",
+      message: "Error fetching all the solved problems",
       error: error.message,
     });
   }
