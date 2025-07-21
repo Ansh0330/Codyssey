@@ -46,7 +46,7 @@ export const createProblem = async (req, res) => {
         expected_output: output,
       }));
 
-      console.log("PRINTING SUBMISSIONS ARRAY ---->", submissions);
+      // console.log("PRINTING SUBMISSIONS ARRAY ---->", submissions);
 
       const submissionsResults = await submitBatch(submissions);
 
