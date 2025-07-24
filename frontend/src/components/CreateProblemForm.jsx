@@ -17,6 +17,7 @@ import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { problemSchema } from "../schemas/problemSchema";
+import axios from "axios";
 
 const sampledpData = {
   title: "Climbing Stairs",
@@ -518,7 +519,21 @@ const CreateProblemForm = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data) => {
-    console.log(data);
+    try {
+      setIsLoading(true);
+      const response = await axiosInstance.post(
+        "/problems/create-problem",
+        data
+      );
+      console.log("PROBLEM RESPONSE ---->", response.data);
+      toast.success(response.data.message ?? "Problem created successfully");
+      navigation(`/`);
+    } catch (error) {
+      console.log("ERROR IN CREATE PROBLEM (createProblemForm)", error);
+      toast.error("Error creating problem");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadSampleData = () => {
