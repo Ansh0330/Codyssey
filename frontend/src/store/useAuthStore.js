@@ -51,6 +51,7 @@ export const useAuthStore = create((set) => ({
     } finally {
       set({ isLoggingIn: false });
     }
+    
   },
 
   logout: async () => {
