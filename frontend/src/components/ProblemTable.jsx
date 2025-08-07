@@ -1,7 +1,18 @@
 import React, { useState, useMemo } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Link } from "react-router-dom";
-import { Bookmark, PencilIcon, Trash, TrashIcon, Plus } from "lucide-react";
+import {
+  Bookmark,
+  PencilIcon,
+  Trash,
+  TrashIcon,
+  Plus,
+  Loader2,
+} from "lucide-react";
+import { useActions } from "../store/useAction";
+import { usePlaylistStore } from "../store/usePlaylistStore";
+import AddToPlaylist from "./AddToPlaylist";
+import CreatePlaylistModal from "./CreatePlaylistModal";
 
 const ProblemTable = ({ problems }) => {
   const { authUser } = useAuthStore();
@@ -10,6 +21,16 @@ const ProblemTable = ({ problems }) => {
   const [difficulty, setDifficulty] = useState("ALL");
   const [selectedTag, setSelectedTag] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreatePlaylistModalOpen, setIsCreatePlaylistModalOpen] =
+    useState(false);
+
+  const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] =
+    useState(false);
+  const [selectedProblemId, setSelectedProblemId] = useState(null);
+
+  const { createPlaylist } = usePlaylistStore();
+
+  const { isDeletingProblem, onDeleteProblem } = useActions();
 
   const allTags = useMemo(() => {
     if (!Array.isArray(problems)) return [];
@@ -51,11 +72,23 @@ const ProblemTable = ({ problems }) => {
   const handleDelete = (problemId) => {
     // Handle delete logic here
     console.log(`Deleting problem with ID: ${problemId}`);
+    onDeleteProblem(problemId);
   };
 
   const handleAddToPlaylist = (problemId) => {
     // Handle add to playlist logic here
     console.log(`Adding problem with ID: ${problemId} to playlist`);
+    setSelectedProblemId(problemId);
+    setIsAddToPlaylistModalOpen(true);
+  };
+
+  const handleCreatePlaylist = async (playlistData) => {
+    try {
+      await createPlaylist(playlistData);
+      setIsCreatePlaylistModalOpen(false);
+    } catch (error) {
+      console.error("Error creating playlist:", error);
+    }
   };
 
   return (
@@ -63,7 +96,10 @@ const ProblemTable = ({ problems }) => {
       {/* Header with Create Playlist Button */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Problems</h2>
-        <button className="btn btn-primary gap-2" onClick={() => {}}>
+        <button
+          className="btn btn-primary gap-2"
+          onClick={() => setIsCreatePlaylistModalOpen(true)}
+        >
           <Plus className="w-4 h-4" />
           Create Playlist
         </button>
@@ -171,7 +207,11 @@ const ProblemTable = ({ problems }) => {
                               onClick={() => handleDelete(problem.id)}
                               className="btn btn-sm btn-error"
                             >
-                              <TrashIcon className="w-4 h-4 text-white" />
+                              {isDeletingProblem ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <TrashIcon className="w-4 h-4 text-white" />
+                              )}
                             </button>
                             <button disabled className="btn btn-sm btn-warning">
                               <PencilIcon className="w-4 h-4 text-white" />
@@ -222,6 +262,17 @@ const ProblemTable = ({ problems }) => {
           Next
         </button>
       </div>
+      <CreatePlaylistModal
+        isOpen={isCreatePlaylistModalOpen}
+        onClose={() => setIsCreatePlaylistModalOpen(false)}
+        onSubmit={handleCreatePlaylist}
+      />
+
+      <AddToPlaylist
+        isOpen={isAddToPlaylistModalOpen}
+        onClose={() => setIsAddToPlaylistModalOpen(false)}
+        problemId={selectedProblemId}
+      />
     </div>
   );
 };
