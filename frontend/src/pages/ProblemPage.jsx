@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Editor } from "@monaco-editor/react";
+import Editor from "@monaco-editor/react";
 import {
   Play,
   FileText,
@@ -17,43 +16,65 @@ import {
   ThumbsUp,
   Home,
 } from "lucide-react";
-
+import { Link, useParams } from "react-router-dom";
 import { useProblemStore } from "../store/useProblemStore";
-import { useExecutionStore } from "../store/useExecutionStore";
 import { getLanguageId } from "../lib/lang";
-import SubmissionResults from "../components/Submissions";
+import { useExecutionStore } from "../store/useExecutionStore";
+import { useSubmissionStore } from "../store/useSubmissionStore";
+import Submission from "../components/Submissions";
+import SubmissionsList from "../components/SubmissionList";
 
 const ProblemPage = () => {
   const { id } = useParams();
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
 
+  const {
+    submission: submissions,
+    isLoading: isSubmissionsLoading,
+    getSubmissionForProblem,
+    getSubmissionCountForProblem,
+    submissionCount,
+  } = useSubmissionStore();
+
   const [code, setCode] = useState("");
   const [activeTab, setActiveTab] = useState("description");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [testCases, setTestCases] = useState([]);
+  const [testcases, setTestCases] = useState([]);
 
   const { executeCode, submission, isExecuting } = useExecutionStore();
 
-  const submissionCount = 10;
-
   useEffect(() => {
     getProblemById(id);
-  }, [getProblemById, id]);
+    getSubmissionCountForProblem(id);
+  }, [id]);
 
   useEffect(() => {
     if (problem) {
-      setCode(problem.codeSnippet?.[selectedLanguage] || "");
-      setTestCases(problem.testcases)?.map((tc) => ({
-        input: tc.input,
-        output: tc.output,
-      }));
+      setCode(
+        problem.codeSnippets?.[selectedLanguage] || submission?.sourceCode || ""
+      );
+      setTestCases(
+        problem.testcases?.map((tc) => ({
+          input: tc.input,
+          output: tc.output,
+        })) || []
+      );
     }
   }, [problem, selectedLanguage]);
+
+  useEffect(() => {
+    if (activeTab === "submissions" && id) {
+      getSubmissionForProblem(id);
+    }
+  }, [activeTab, id]);
+
+  console.log("submission", submissions);
 
   const handleLanguageChange = (e) => {
     const lang = e.target.value;
     setSelectedLanguage(lang);
+    setCode(problem.codeSnippets?.[lang] || "");
   };
 
   const handleRunCode = (e) => {
@@ -64,7 +85,112 @@ const ProblemPage = () => {
       const expected_outputs = problem.testcases.map((tc) => tc.output);
       executeCode(code, language_id, stdin, expected_outputs, id);
     } catch (error) {
-      console.log("ERROR IN RUN CODE", error);
+      console.log("Error executing code", error);
+    }
+  };
+
+  if (isProblemLoading || !problem) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-base-200">
+        <div className="card bg-base-100 p-8 shadow-xl">
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+          <p className="mt-4 text-base-content/70">Loading problem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "description":
+        return (
+          <div className="prose max-w-none">
+            <p className="text-lg mb-6">{problem.description}</p>
+
+            {problem.examples && (
+              <>
+                <h3 className="text-xl font-bold mb-4">Examples:</h3>
+                {Object.entries(problem.examples).map(
+                  ([lang, example], idx) => (
+                    <div
+                      key={lang}
+                      className="bg-base-200 p-6 rounded-xl mb-6 font-mono"
+                    >
+                      <div className="mb-4">
+                        <div className="text-indigo-300 mb-2 text-base font-semibold">
+                          Input:
+                        </div>
+                        <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
+                          {example.input}
+                        </span>
+                      </div>
+                      <div className="mb-4">
+                        <div className="text-indigo-300 mb-2 text-base font-semibold">
+                          Output:
+                        </div>
+                        <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
+                          {example.output}
+                        </span>
+                      </div>
+                      {example.explanation && (
+                        <div>
+                          <div className="text-emerald-300 mb-2 text-base font-semibold">
+                            Explanation:
+                          </div>
+                          <p className="text-base-content/70 text-lg font-sem">
+                            {example.explanation}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+              </>
+            )}
+
+            {problem.constraints && (
+              <>
+                <h3 className="text-xl font-bold mb-4">Constraints:</h3>
+                <div className="bg-base-200 p-6 rounded-xl mb-6">
+                  <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
+                    {problem.constraints}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      case "submissions":
+        return (
+          <SubmissionsList
+            submissions={submissions}
+            isLoading={isSubmissionsLoading}
+          />
+        );
+      case "discussion":
+        return (
+          <div className="p-4 text-center text-base-content/70">
+            No discussions yet
+          </div>
+        );
+      case "hints":
+        return (
+          <div className="p-4">
+            {problem?.hints ? (
+              <div className="bg-base-200 p-6 rounded-xl">
+                <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
+                  {problem.hints}
+                </span>
+              </div>
+            ) : (
+              <div className="text-center text-base-content/70">
+                No hints available
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -122,6 +248,7 @@ const ProblemPage = () => {
           </select>
         </div>
       </nav>
+
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="card bg-base-100 shadow-xl">
@@ -221,7 +348,7 @@ const ProblemPage = () => {
         <div className="card bg-base-100 shadow-xl mt-6">
           <div className="card-body">
             {submission ? (
-              <SubmissionResults submission={submission} />
+              <Submission submission={submission} />
             ) : (
               <>
                 <div className="flex items-center justify-between mb-6">
@@ -236,7 +363,7 @@ const ProblemPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {testCases.map((testCase, index) => (
+                      {testcases.map((testCase, index) => (
                         <tr key={index}>
                           <td className="font-mono">{testCase.input}</td>
                           <td className="font-mono">{testCase.output}</td>

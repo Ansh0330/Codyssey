@@ -22,12 +22,24 @@ export const getJudge0LanguageName = (languageId) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const submitBatch = async (submissions) => {
-  const { data } = await axios.post(
-    `${process.env.JUDGE0_API_URL}/submissions/batch?base64_encoded=false`,
-    {
+  const options = {
+    method: "POST",
+    url: "https://judge0-ce.p.rapidapi.com/submissions/batch",
+    params: {
+      base64_encoded: "true",
+    },
+    headers: {
+      "x-rapidapi-key": "3e8b0e4c21mshd5a35b7323fc1d9p15765djsn11399f181bf3",
+      "x-rapidapi-host": "judge0-ce.p.rapidapi.com",
+      "Content-Type": "application/json",
+    },
+    data: {
       submissions,
-    }
-  );
+    },
+  };
+
+  const response = await axios.request(options);
+  const data = response.data;
 
   console.log("Judge0 submission results(tokens)", data);
   return data;
@@ -35,15 +47,22 @@ export const submitBatch = async (submissions) => {
 
 export const pollBatchResults = async (tokens) => {
   while (true) {
-    const { data } = await axios.get(
-      `${process.env.JUDGE0_API_URL}/submissions/batch`,
-      {
-        params: {
-          tokens: tokens.join(","),
-          base64_encoded: false,
-        },
-      }
-    );
+    const options = {
+      method: "GET",
+      url: "https://judge0-ce.p.rapidapi.com/submissions/batch",
+      params: {
+        tokens: tokens.join(","),
+        base64_encoded: "true",
+        fields: "*",
+      },
+      headers: {
+        "x-rapidapi-key": "3e8b0e4c21mshd5a35b7323fc1d9p15765djsn11399f181bf3",
+        "x-rapidapi-host": "judge0-ce.p.rapidapi.com",
+      },
+    };
+
+    const response = await axios.request(options);
+    const data = response.data;
 
     const results = data.submissions;
     const isAllDone = results.every(

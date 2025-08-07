@@ -3,7 +3,7 @@ export const getAllSubmissions = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const submission = await db.submission.findMany({
+    const submissions = await db.submission.findMany({
       where: {
         userId: userId,
       },
@@ -12,7 +12,7 @@ export const getAllSubmissions = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Submissions fetched successfully",
-      submission,
+      submissions,
     });
   } catch (error) {
     console.log("Error in getAllSubmissions", error);
@@ -28,7 +28,7 @@ export const getSubmissionsByProblemId = async (req, res) => {
     const userId = req.user.id;
     const problemId = req.params.problemId;
 
-    const submissions = db.submission.findMany({
+    const submission = db.submission.findMany({
       where: {
         userId: userId,
         problemId: problemId,
@@ -38,7 +38,7 @@ export const getSubmissionsByProblemId = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Submissions by Id fetched successfully",
-      submissions,
+      submission,
     });
   } catch (error) {
     console.log("Error in getSubmissionsByProblemId", error);
